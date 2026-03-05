@@ -14,7 +14,11 @@
       "Bash(powershell.exe -Command \"& ''C:\\\\Program Files\\\\nodejs\\\\node.exe'' --version\")",
       "Bash(\"/c/Program Files/nodejs/node.exe\" \"c:/Users/rahul/AI Agent/Sales/vibe-coding-prompt-template/scripts/test-hubspot-connection.js\")",
       "Bash(\"/c/Program Files/nodejs/node.exe\" \"c:/Users/rahul/AI Agent/Sales/vibe-coding-prompt-template/scripts/setup-hubspot-properties.js\")",
-      "Bash(\"/c/Program Files/nodejs/node.exe\" \"c:/Users/rahul/AI Agent/Sales/vibe-coding-prompt-template/scripts/setup-hubspot-pipeline.js\")"
+      "Bash(\"/c/Program Files/nodejs/node.exe\" \"c:/Users/rahul/AI Agent/Sales/vibe-coding-prompt-template/scripts/setup-hubspot-pipeline.js\")",
+      "Bash(docker --version)",
+      "Bash(powershell.exe -Command \"docker --version\")",
+      "Bash(powershell.exe -Command \"docker ps --format ''table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}''\")",
+      "Bash(powershell.exe -Command \"Invoke-WebRequest -Uri http://localhost:5678/healthz -UseBasicParsing -TimeoutSec 5 | Select-Object -ExpandProperty StatusCode\")"
     ]
   }
 }

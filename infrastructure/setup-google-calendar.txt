@@ -1,0 +1,67 @@
+Bronte AI Sales Agent — Google Calendar Integration Setup
+==========================================================
+
+The Pre-Call Briefing Agent (F-05) needs to know when meetings are
+scheduled so it can send briefings 30 minutes before each call.
+
+There are two ways to connect Google Calendar:
+
+--------------------------------------------------------------
+OPTION A: Connect Google Calendar to HubSpot (Recommended)
+--------------------------------------------------------------
+
+This is the simplest approach. HubSpot syncs meetings from your
+Google Calendar automatically, then n8n queries HubSpot for
+upcoming meetings.
+
+Steps:
+1. Go to app.hubspot.com
+2. Settings → Integrations → Connected Apps → Google Calendar
+3. Sign in with the Google account that holds your sales meetings
+4. Enable "Sync meetings to HubSpot"
+5. Verify: create a test meeting in Google Calendar and confirm
+   it appears in HubSpot → Meetings
+
+How the Pre-Call Agent will use this:
+- n8n runs a scheduled workflow every 15 minutes
+- Queries HubSpot API for meetings starting in 30 minutes
+- For each meeting, fetches the associated deal data
+- Sends briefing via Slack/email
+
+--------------------------------------------------------------
+OPTION B: Direct Google Calendar API in n8n
+--------------------------------------------------------------
+
+Use this if you want n8n to read Google Calendar directly
+(more real-time, but requires OAuth setup).
+
+Steps:
+1. Go to console.cloud.google.com
+2. Create a project (or use existing)
+3. Enable the Google Calendar API:
+   APIs & Services → Library → search "Google Calendar API" → Enable
+4. Create OAuth 2.0 credentials:
+   APIs & Services → Credentials → Create Credentials → OAuth client ID
+   - Application type: Web application
+   - Authorized redirect URI: https://your-n8n-domain/rest/oauth2-credential/callback
+5. Copy the Client ID and Client Secret
+6. In n8n:
+   Settings → Credentials → Add → Google Calendar OAuth2
+   Paste Client ID and Client Secret
+   Click "Connect" and authorize
+
+How the Pre-Call Agent will use this:
+- n8n triggers on a schedule (every 15 minutes)
+- Google Calendar node fetches events in the next 30 minutes
+- Matches event attendees to HubSpot contacts/deals
+- Sends briefing via Slack/email
+
+--------------------------------------------------------------
+RECOMMENDATION
+--------------------------------------------------------------
+
+Start with Option A (HubSpot sync). It's zero-code and your
+existing HubSpot connection handles everything. If you need
+faster or more detailed calendar access later, add Option B.
+
+After completing either option, the Phase 0 calendar task is done.

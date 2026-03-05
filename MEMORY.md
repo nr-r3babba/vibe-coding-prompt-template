@@ -5,23 +5,28 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 -->
 
 ## Active Phase & Goal
-**Current Phase:** Phase 0 — Foundations
-**Current Task:** Run setup scripts against live HubSpot, then deploy n8n on AWS
-**Completed This Session:**
-- Created project scaffold (package.json, .env.example, .gitignore)
-- Built `scripts/setup-hubspot-properties.js` — creates 9 MEDDPICC properties (safe to re-run)
-- Built `scripts/test-hubspot-connection.js` — verifies API token + CRUD operations
-- Built `scripts/setup-hubspot-pipeline.js` — shows current pipeline + recommends Bronte stages
-- Created `prompts/meeting-analysis.md` — first Claude prompt template for F-04
+**Current Phase:** Phase 0 COMPLETE — Ready for Phase 1
+**Current Task:** Begin Phase 1 — Top of Funnel agents
+**Completed:**
+- Project scaffold (package.json, .env.example, .gitignore)
+- HubSpot Private App connected — API token verified (auth, CRUD, contacts, owners all passing)
+- 9 MEDDPICC custom deal properties created in HubSpot (deal_qualification group)
+- Pipeline verified — "2026 Sales Pipeline" with 12 stages already configured
+- Scripts: `setup-hubspot-properties.js`, `test-hubspot-connection.js`, `setup-hubspot-pipeline.js`, `load-env.js`
+- Prompt template: `prompts/meeting-analysis.md` (Claude API prompt for F-04)
+- Infrastructure: `deploy-n8n-aws.sh`, `docker-compose.yml`, `setup-google-calendar.txt`
+- n8n workflow: `n8n-workflows/00-hubspot-connection-test.json` (ready to import)
+- Node.js v24.14.0 installed via winget
 
-**Next Steps:**
-1. USER ACTION: Create HubSpot Private App (Settings > Integrations > Private Apps) with CRM scopes
-2. USER ACTION: Copy .env.example to .env, paste your HubSpot token
-3. Run `npm run test:connection` to verify API access
-4. Run `npm run setup:properties` to create MEDDPICC properties
-5. Run `npm run setup:pipeline` and manually configure pipeline stages in HubSpot UI
-6. Deploy n8n on AWS EC2 t3.small in ap-southeast-2 (Sydney)
-7. Connect Google Calendar to HubSpot for meeting triggers
+- Docker Desktop installed, n8n container running (localhost:5678, health 200 OK)
+- Google Calendar connected to HubSpot
+- n8n ↔ HubSpot connection verified via test workflow
+
+**Next Steps (Phase 1 — Top of Funnel):**
+1. Build LinkedIn ICP Scraper workflow (Phantom Buster + n8n) — F-02
+2. Build MEDDPICC Auto-Scoring Agent (Claude API + n8n) — F-03
+3. Auto-create scored deals in HubSpot
+4. Gate: First 10 prospects scored and added to CRM
 
 ## Architectural Decisions
 - 2026-03-05 - Architecture: Event-Driven Agent Mesh. Each agent is triggered by an event, performs a focused task, writes results to HubSpot. Small, testable, replaceable agents.
@@ -43,7 +48,7 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 
 ## Completed Phases
 - [x] Workspace setup — AGENTS.md, MEMORY.md, agent_docs/ created
-- [ ] Phase 0: Foundations (9-14 Mar)
+- [x] Phase 0: Foundations (9-14 Mar) — VERIFIED 5 Mar: HubSpot API, MEDDPICC props, n8n running, Calendar connected
 - [ ] Phase 1: Top of Funnel (14-21 Mar)
 - [ ] Phase 2: Middle of Funnel (21-28 Mar)
 - [ ] Phase 3: Bottom of Funnel (28-31 Mar)

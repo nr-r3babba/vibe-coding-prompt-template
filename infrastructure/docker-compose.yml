@@ -1,0 +1,32 @@
+# Bronte AI Sales Agent — Local n8n Development
+#
+# Usage:
+#   1. Install Docker Desktop: https://docs.docker.com/desktop/install/windows-install/
+#   2. Open a terminal in this folder
+#   3. Run: docker-compose up -d
+#   4. Open: http://localhost:5678
+#   5. Stop: docker-compose down
+#
+# Data persists in the n8n_data volume between restarts.
+
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=development
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Australia/Sydney
+      - TZ=Australia/Sydney
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

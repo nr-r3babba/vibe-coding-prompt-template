@@ -1,0 +1,121 @@
+{
+  "name": "00 — HubSpot Connection Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "deal",
+        "operation": "create",
+        "additionalFields": {
+          "dealName": "__N8N_TEST_DEAL__ (safe to delete)",
+          "pipeline": "default",
+          "dealStage": "appointmentscheduled",
+          "amount": "0"
+        }
+      },
+      "id": "hubspot-create-deal",
+      "name": "Create Test Deal",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "HubSpot App Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "deal",
+        "operation": "get",
+        "dealId": "={{ $json.id }}"
+      },
+      "id": "hubspot-read-deal",
+      "name": "Read Deal Back",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "HubSpot App Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "deal",
+        "operation": "delete",
+        "dealId": "={{ $json.id }}"
+      },
+      "id": "hubspot-delete-deal",
+      "name": "Delete Test Deal",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "HubSpot App Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "result",
+              "value": "SUCCESS: n8n can create, read, and delete HubSpot deals. Integration is working."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-success",
+      "name": "Success Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Create Test Deal", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Test Deal": {
+      "main": [
+        [{ "node": "Read Deal Back", "type": "main", "index": 0 }]
+      ]
+    },
+    "Read Deal Back": {
+      "main": [
+        [{ "node": "Delete Test Deal", "type": "main", "index": 0 }]
+      ]
+    },
+    "Delete Test Deal": {
+      "main": [
+        [{ "node": "Success Result", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "Phase 0" },
+    { "name": "HubSpot" },
+    { "name": "Test" }
+  ]
+}

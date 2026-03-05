@@ -64,12 +64,12 @@ These rules apply across all AI coding assistants:
 ## Phased Roadmap
 
 ### Phase 0: Foundations (Week 1: 9-14 Mar)
-- [ ] HubSpot Private App setup + API integration (F-01)
-- [ ] Create 8 MEDDPICC custom deal properties + deal_health_score
-- [ ] Deploy n8n on AWS EC2 (t3.small, ap-southeast-2)
-- [ ] Connect n8n to HubSpot via official node
-- [ ] Set up deal pipeline stages matching Bronte's funnel
-- [ ] Configure Google Calendar integration
+- [x] HubSpot Private App setup + API integration (F-01)
+- [x] Create 8 MEDDPICC custom deal properties + deal_health_score
+- [x] Deploy n8n (Docker local, production AWS guide ready)
+- [x] Connect n8n to HubSpot via official node
+- [x] Set up deal pipeline stages matching Bronte's funnel
+- [x] Configure Google Calendar integration
 
 ### Phase 1: Top of Funnel (Week 2: 14-21 Mar)
 - [ ] LinkedIn ICP Scraper via Phantom Buster + n8n (F-02)
