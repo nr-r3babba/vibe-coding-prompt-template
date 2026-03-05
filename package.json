@@ -1,0 +1,17 @@
+{
+  "name": "bronte-ai-sales-agent",
+  "version": "0.1.0",
+  "description": "AI-native sales system for Bronte — automates GTM operations for Tier 1 financial institutions",
+  "type": "module",
+  "scripts": {
+    "setup:properties": "node scripts/setup-hubspot-properties.js",
+    "setup:pipeline": "node scripts/setup-hubspot-pipeline.js",
+    "test:connection": "node scripts/test-hubspot-connection.js",
+    "test": "node --test scripts/**/*.test.js",
+    "lint": "echo 'No linter configured yet'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}

@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Skill(frontend-design)",
-      "Skill(frontend-design:*)"
+      "Skill(frontend-design:*)",
+      "Bash(node scripts/test-hubspot-connection.js)",
+      "Bash(where node)",
+      "Read(//c/Program Files/nodejs/**)",
+      "Read(//c/Program Files \\(x86\\)/nodejs/**)",
+      "Bash(cmd.exe /c \"where node\")",
+      "Bash(cmd.exe /c \"winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements\")",
+      "Bash(cmd.exe /c \"winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements 2>&1\")",
+      "Bash(powershell.exe -Command \"winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements\")",
+      "Bash(powershell.exe -Command \"& ''C:\\\\Program Files\\\\nodejs\\\\node.exe'' --version\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" \"c:/Users/rahul/AI Agent/Sales/vibe-coding-prompt-template/scripts/test-hubspot-connection.js\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" \"c:/Users/rahul/AI Agent/Sales/vibe-coding-prompt-template/scripts/setup-hubspot-properties.js\")",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" \"c:/Users/rahul/AI Agent/Sales/vibe-coding-prompt-template/scripts/setup-hubspot-pipeline.js\")"
     ]
   }
 }
