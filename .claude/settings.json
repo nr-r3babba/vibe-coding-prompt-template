@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(MSYS_NO_PATHCONV=1 docker exec infrastructure-n8n-1 sh -c 'n8n export:workflow --id=OSC7x8AJ0YfN0xK9 --output=/tmp/check.json && cat /tmp/check.json | head -c 500')",
+      "Bash(for id:*)",
+      "Bash(do)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec infrastructure-n8n-1 sh -c \"n8n export:workflow --id=$id --output=/tmp/w.json 2>/dev/null && node -e \"\"const w=JSON.parse\\(require\\(''fs''\\).readFileSync\\(''/tmp/w.json''\\)\\)[0]; console.log\\(w.id, ''|'', w.name, ''| active:'', w.active, ''| archived:'', w.isArchived\\)\"\"\")",
+      "Bash(done)",
+      "Bash(for i:*)",
+      "Bash(do sleep:*)",
+      "Bash(break)",
+      "Bash(MSYS_NO_PATHCONV=1 docker logs infrastructure-n8n-1 --tail 50)",
+      "Bash(MSYS_NO_PATHCONV=1 docker logs infrastructure-n8n-1 --tail 10)",
+      "Bash(MSYS_NO_PATHCONV=1 docker logs infrastructure-n8n-1 --tail 15)",
+      "Bash(curl -v -X POST http://localhost:5678/webhook/phantom-buster-webhook -H \"Content-Type: application/json\" -d '{\"\"\"\"prospects\"\"\"\":[{\"\"\"\"fullName\"\"\"\":\"\"\"\"Test Alpha\"\"\"\",\"\"\"\"title\"\"\"\":\"\"\"\"CRO\"\"\"\",\"\"\"\"company\"\"\"\":\"\"\"\"Test Bank\"\"\"\",\"\"\"\"location\"\"\"\":\"\"\"\"Sydney\"\"\"\",\"\"\"\"industry\"\"\"\":\"\"\"\"Banking\"\"\"\"}]}')",
+      "Bash(MSYS_NO_PATHCONV=1 docker logs infrastructure-n8n-1)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec infrastructure-n8n-1 node -e \":*)"
+    ]
+  }
+}

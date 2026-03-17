@@ -1,0 +1,176 @@
+{
+  "name": "02 — MEDDPICC Auto-Scorer (F-03)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "score-meddpicc",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Score MEDDPICC Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "meddpicc-scorer"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract deal ID from webhook payload\nconst input = $input.first().json;\nconst body = input.body || input;\nconst dealId = body.dealId || body.deal_id || body.id || input.dealId || input.deal_id || input.id;\n\nif (!dealId) {\n  throw new Error('No dealId provided in webhook payload. Keys received: ' + JSON.stringify(Object.keys(input)));\n}\n\nreturn [{ json: { dealId: String(dealId) } }];"
+      },
+      "id": "extract-deal-id",
+      "name": "Extract Deal ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "resource": "deal",
+        "operation": "get",
+        "dealId": "={{ $json.dealId }}",
+        "additionalFields": {
+          "properties": ["dealname", "dealstage", "amount", "pipeline", "deal_health_score", "meddpicc_metrics", "meddpicc_economic_buyer", "meddpicc_decision_criteria", "meddpicc_decision_process", "meddpicc_paper_process", "meddpicc_pain", "meddpicc_champion", "meddpicc_competition"]
+        }
+      },
+      "id": "fetch-deal",
+      "name": "Fetch Deal from HubSpot",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [640, 300],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE_WITH_HUBSPOT_CREDENTIAL_ID",
+          "name": "HubSpot App Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine deal data into context object for Claude\n// Notes fetching skipped for MVP — can be added later\nconst deal = $input.first().json;\nconst dealId = $('Extract Deal ID').first().json.dealId;\n\nconst dealData = {\n  deal_id: deal.id || dealId,\n  deal_name: deal.properties?.dealname || 'Unknown',\n  deal_stage: deal.properties?.dealstage || 'Unknown',\n  amount: deal.properties?.amount || 'Not set',\n  existing_meddpicc: {\n    metrics: deal.properties?.meddpicc_metrics || 'No data',\n    economic_buyer: deal.properties?.meddpicc_economic_buyer || 'No data',\n    decision_criteria: deal.properties?.meddpicc_decision_criteria || 'No data',\n    decision_process: deal.properties?.meddpicc_decision_process || 'No data',\n    paper_process: deal.properties?.meddpicc_paper_process || 'No data',\n    pain: deal.properties?.meddpicc_pain || 'No data',\n    champion: deal.properties?.meddpicc_champion || 'No data',\n    competition: deal.properties?.meddpicc_competition || 'No data'\n  },\n  notes_count: 0,\n  current_health_score: deal.properties?.deal_health_score || 'Not scored'\n};\n\nreturn [{\n  json: {\n    dealId: deal.id || dealId,\n    dealStage: deal.properties?.dealstage || 'Unknown',\n    dealData: dealData\n  }\n}];"
+      },
+      "id": "build-context",
+      "name": "Build Deal Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, temperature: 0, system: 'You are a B2B enterprise sales qualification agent for Bronte, an AI-native risk platform selling to Tier 1 banks in AU, NZ, and SG. Score deals across all 8 MEDDPICC dimensions (1-5 each). Be honest — if no data exists for a dimension, score it 1. Return ONLY valid JSON with keys: meddpicc_metrics ({score, evidence}), meddpicc_economic_buyer ({score, evidence}), meddpicc_decision_criteria ({score, evidence}), meddpicc_decision_process ({score, evidence}), meddpicc_paper_process ({score, evidence}), meddpicc_pain ({score, evidence}), meddpicc_champion ({score, evidence}), meddpicc_competition ({score, evidence}), overall_score (number, sum of 8), deal_health_score (1-10), top_gaps (array of strings), recommended_actions (array of strings).', messages: [{ role: 'user', content: 'Score this deal on MEDDPICC.\\n\\nDeal ID: ' + $json.dealId + '\\nDeal stage: ' + $json.dealStage + '\\n\\nAvailable data:\\n' + JSON.stringify($json.dealData, null, 2) }] }) }}",
+        "options": { "timeout": 60000 }
+      },
+      "id": "claude-meddpicc",
+      "name": "Claude: MEDDPICC Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1100, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEADER_AUTH_CREDENTIAL_ID",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude MEDDPICC response\nconst response = $input.first().json;\nconst dealId = $('Build Deal Context').first().json.dealId;\n\nlet scoring;\ntry {\n  const content = response.content[0].text;\n  const jsonStr = content.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  scoring = JSON.parse(jsonStr);\n} catch (e) {\n  throw new Error('Failed to parse Claude MEDDPICC response: ' + e.message);\n}\n\n// Build HubSpot properties update\nconst properties = {\n  meddpicc_metrics: `[${scoring.meddpicc_metrics.score}/5] ${scoring.meddpicc_metrics.evidence}`,\n  meddpicc_economic_buyer: `[${scoring.meddpicc_economic_buyer.score}/5] ${scoring.meddpicc_economic_buyer.evidence}`,\n  meddpicc_decision_criteria: `[${scoring.meddpicc_decision_criteria.score}/5] ${scoring.meddpicc_decision_criteria.evidence}`,\n  meddpicc_decision_process: `[${scoring.meddpicc_decision_process.score}/5] ${scoring.meddpicc_decision_process.evidence}`,\n  meddpicc_paper_process: `[${scoring.meddpicc_paper_process.score}/5] ${scoring.meddpicc_paper_process.evidence}`,\n  meddpicc_pain: `[${scoring.meddpicc_pain.score}/5] ${scoring.meddpicc_pain.evidence}`,\n  meddpicc_champion: `[${scoring.meddpicc_champion.score}/5] ${scoring.meddpicc_champion.evidence}`,\n  meddpicc_competition: `[${scoring.meddpicc_competition.score}/5] ${scoring.meddpicc_competition.evidence}`,\n  deal_health_score: String(scoring.deal_health_score)\n};\n\nreturn [{\n  json: {\n    dealId,\n    properties,\n    overall_score: scoring.overall_score,\n    deal_health_score: scoring.deal_health_score,\n    top_gaps: scoring.top_gaps,\n    recommended_actions: scoring.recommended_actions\n  }\n}];"
+      },
+      "id": "parse-meddpicc",
+      "name": "Parse MEDDPICC Scores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 300]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/deals/{{ $json.dealId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: $json.properties }) }}"
+      },
+      "id": "update-hubspot",
+      "name": "Update HubSpot MEDDPICC",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1540, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HUBSPOT_AUTH_CREDENTIAL_ID",
+          "name": "HubSpot Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'scored', dealId: $('Parse MEDDPICC Scores').first().json.dealId, overall_score: $('Parse MEDDPICC Scores').first().json.overall_score, deal_health_score: $('Parse MEDDPICC Scores').first().json.deal_health_score, top_gaps: $('Parse MEDDPICC Scores').first().json.top_gaps }) }}"
+      },
+      "id": "respond-webhook",
+      "name": "Respond with Scores",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1760, 300]
+    }
+  ],
+  "connections": {
+    "Score MEDDPICC Webhook": {
+      "main": [
+        [{ "node": "Extract Deal ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Deal ID": {
+      "main": [
+        [{ "node": "Fetch Deal from HubSpot", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Deal from HubSpot": {
+      "main": [
+        [{ "node": "Build Deal Context", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Deal Context": {
+      "main": [
+        [{ "node": "Claude: MEDDPICC Score", "type": "main", "index": 0 }]
+      ]
+    },
+    "Claude: MEDDPICC Score": {
+      "main": [
+        [{ "node": "Parse MEDDPICC Scores", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse MEDDPICC Scores": {
+      "main": [
+        [
+          { "node": "Update HubSpot MEDDPICC", "type": "main", "index": 0 },
+          { "node": "Respond with Scores", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "Phase 1" }, { "name": "MEDDPICC" }, { "name": "Scoring" }]
+}

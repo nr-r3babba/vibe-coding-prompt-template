@@ -1,0 +1,235 @@
+{
+  "name": "01 — LinkedIn ICP Scraper (F-02)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "phantom-buster-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Phantom Buster Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "phantom-buster-inbound"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Phantom Buster output — handles both single prospect and array\nconst input = $input.first().json;\nconst prospects = Array.isArray(input.prospects) ? input.prospects : (Array.isArray(input) ? input : [input]);\n\nreturn prospects.map(p => ({\n  json: {\n    fullName: p.fullName || p.name || `${p.firstName || ''} ${p.lastName || ''}`.trim(),\n    firstName: p.firstName || p.fullName?.split(' ')[0] || '',\n    lastName: p.lastName || p.fullName?.split(' ').slice(1).join(' ') || '',\n    title: p.title || p.headline || '',\n    company: p.company || p.companyName || '',\n    location: p.location || '',\n    linkedinUrl: p.linkedinUrl || p.profileUrl || p.url || '',\n    connectionDegree: p.connectionDegree || p.degree || '',\n    summary: p.summary || p.description || '',\n    industry: p.industry || '',\n    companySize: p.companySize || p.employeeCount || '',\n    mutualConnections: p.mutualConnections || p.sharedConnections || 0\n  }\n}));"
+      },
+      "id": "parse-prospects",
+      "name": "Parse Prospect Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, temperature: 0, system: 'You are a B2B enterprise sales qualification agent for Bronte, an AI-native risk platform selling to Tier 1 banks and financial institutions in Australia, New Zealand, and Singapore. Evaluate LinkedIn prospect profiles against Bronte\\'s ICP: Tier 1 banks in AU/NZ/SG, C-suite or VP/Director roles in Risk, Compliance, Technology, or Finance. Score 1-10 for ICP fit. Return ONLY valid JSON with keys: icp_fit_score (number), fit_rationale (string), role_relevance (high/medium/low), decision_authority (economic_buyer/champion/influencer/end_user/unknown), recommended_approach (priority_outreach/warm_introduction/nurture/skip), connection_notes (string), hubspot_tags (array of strings).', messages: [{ role: 'user', content: 'Evaluate this LinkedIn prospect against Bronte ICP criteria:\\n\\n' + JSON.stringify($json) }] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "claude-icp-score",
+      "name": "Claude: Score ICP Fit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HEADER_AUTH_CREDENTIAL_ID",
+          "name": "Anthropic API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's response and combine with original prospect data\nconst claudeResponse = $input.first().json;\nconst prospectData = $('Parse Prospect Data').first().json;\n\nlet scoring;\ntry {\n  const content = claudeResponse.content[0].text;\n  // Handle case where Claude wraps JSON in markdown code blocks\n  const jsonStr = content.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  scoring = JSON.parse(jsonStr);\n} catch (e) {\n  scoring = {\n    icp_fit_score: 0,\n    fit_rationale: 'Failed to parse Claude response: ' + e.message,\n    role_relevance: 'unknown',\n    decision_authority: 'unknown',\n    recommended_approach: 'skip',\n    connection_notes: '',\n    hubspot_tags: ['parse_error']\n  };\n}\n\nreturn [{\n  json: {\n    ...prospectData,\n    ...scoring\n  }\n}];"
+      },
+      "id": "parse-scoring",
+      "name": "Parse ICP Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.icp_fit_score }}",
+              "operation": "largerEqual",
+              "value2": 6
+            }
+          ]
+        }
+      },
+      "id": "filter-qualified",
+      "name": "Score >= 6?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "create",
+        "email": "={{ $json.linkedinUrl }}@placeholder.bronte.ai",
+        "additionalFields": {
+          "firstName": "={{ $json.firstName }}",
+          "lastName": "={{ $json.lastName }}",
+          "jobTitle": "={{ $json.title }}",
+          "company": "={{ $json.company }}",
+          "city": "={{ $json.location }}",
+          "website": "={{ $json.linkedinUrl }}"
+        }
+      },
+      "id": "hubspot-create-contact",
+      "name": "Create HubSpot Contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [1300, 200],
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "REPLACE_WITH_HUBSPOT_CREDENTIAL_ID",
+          "name": "HubSpot App Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/deals",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { dealname: $json.company + ' — ' + $json.fullName, pipeline: 'default', dealstage: 'appointmentscheduled', amount: '1000000' } }) }}"
+      },
+      "id": "hubspot-create-deal",
+      "name": "Create HubSpot Deal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1520, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HUBSPOT_AUTH_CREDENTIAL_ID",
+          "name": "HubSpot Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/deals/{{ $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ properties: { deal_health_score: String($('Parse ICP Score').first().json.icp_fit_score), meddpicc_champion: $('Parse ICP Score').first().json.connection_notes || 'Needs discovery', meddpicc_pain: $('Parse ICP Score').first().json.fit_rationale || 'Needs discovery' } }) }}"
+      },
+      "id": "update-deal-properties",
+      "name": "Update Deal ICP Properties",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1740, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_HUBSPOT_AUTH_CREDENTIAL_ID",
+          "name": "HubSpot Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log skipped prospects\nconst prospect = $input.first().json;\nreturn [{ json: { status: 'skipped', reason: `ICP score ${prospect.icp_fit_score} < 6`, prospect: prospect.fullName, company: prospect.company, score: prospect.icp_fit_score } }];"
+      },
+      "id": "log-skipped",
+      "name": "Log Skipped (Score < 6)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'processed', prospects_received: $('Parse Prospect Data').all().length }) }}"
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [640, 500]
+    }
+  ],
+  "connections": {
+    "Phantom Buster Webhook": {
+      "main": [
+        [
+          { "node": "Parse Prospect Data", "type": "main", "index": 0 },
+          { "node": "Respond to Webhook", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Parse Prospect Data": {
+      "main": [
+        [{ "node": "Claude: Score ICP Fit", "type": "main", "index": 0 }]
+      ]
+    },
+    "Claude: Score ICP Fit": {
+      "main": [
+        [{ "node": "Parse ICP Score", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse ICP Score": {
+      "main": [
+        [{ "node": "Score >= 6?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Score >= 6?": {
+      "main": [
+        [{ "node": "Create HubSpot Contact", "type": "main", "index": 0 }],
+        [{ "node": "Log Skipped (Score < 6)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create HubSpot Contact": {
+      "main": [
+        [{ "node": "Create HubSpot Deal", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create HubSpot Deal": {
+      "main": [
+        [{ "node": "Update Deal ICP Properties", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "Phase 1" }, { "name": "LinkedIn" }, { "name": "ICP" }]
+}

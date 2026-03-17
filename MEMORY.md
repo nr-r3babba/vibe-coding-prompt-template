@@ -5,28 +5,28 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 -->
 
 ## Active Phase & Goal
-**Current Phase:** Phase 0 COMPLETE — Ready for Phase 1
-**Current Task:** Begin Phase 1 — Top of Funnel agents
+**Current Phase:** Phase 1 COMPLETE — Ready for Phase 2
+**Current Task:** Begin Phase 2 — Middle of Funnel agents
 **Completed:**
 - Project scaffold (package.json, .env.example, .gitignore)
 - HubSpot Private App connected — API token verified (auth, CRUD, contacts, owners all passing)
 - 9 MEDDPICC custom deal properties created in HubSpot (deal_qualification group)
 - Pipeline verified — "2026 Sales Pipeline" with 12 stages already configured
-- Scripts: `setup-hubspot-properties.js`, `test-hubspot-connection.js`, `setup-hubspot-pipeline.js`, `load-env.js`
-- Prompt template: `prompts/meeting-analysis.md` (Claude API prompt for F-04)
+- Scripts: `setup-hubspot-properties.js`, `test-hubspot-connection.js`, `setup-hubspot-pipeline.js`, `load-env.js`, `test-phase1-flow.js`
+- Prompt templates: `prompts/meeting-analysis.md`, `prompts/icp-scoring.md`, `prompts/meddpicc-scoring.md`
 - Infrastructure: `deploy-n8n-aws.sh`, `docker-compose.yml`, `setup-google-calendar.txt`
-- n8n workflow: `n8n-workflows/00-hubspot-connection-test.json` (ready to import)
+- n8n workflows: `00-hubspot-connection-test.json`, `01-linkedin-icp-scraper.json` (F-02), `02-meddpicc-auto-scorer.json` (F-03)
 - Node.js v24.14.0 installed via winget
-
 - Docker Desktop installed, n8n container running (localhost:5678, health 200 OK)
 - Google Calendar connected to HubSpot
 - n8n ↔ HubSpot connection verified via test workflow
+- Phase 1 E2E test passing: ICP scoring + MEDDPICC scoring + HubSpot writes all verified
 
-**Next Steps (Phase 1 — Top of Funnel):**
-1. Build LinkedIn ICP Scraper workflow (Phantom Buster + n8n) — F-02
-2. Build MEDDPICC Auto-Scoring Agent (Claude API + n8n) — F-03
-3. Auto-create scored deals in HubSpot
-4. Gate: First 10 prospects scored and added to CRM
+**Next Steps (Phase 2 — Middle of Funnel):**
+1. Build Hidden Meeting Note-Taking Agent (audio capture + AWS Transcribe + Claude) — F-04
+2. Build Pre-Call Briefing Agent (n8n + Claude + HubSpot/Calendar) — F-05
+3. Build ROI / Business Case Auto-Updater (Microsoft Graph API) — F-06
+4. Gate: First live call processed; brief delivered; HubSpot updated
 
 ## Architectural Decisions
 - 2026-03-05 - Architecture: Event-Driven Agent Mesh. Each agent is triggered by an event, performs a focused task, writes results to HubSpot. Small, testable, replaceable agents.
@@ -41,7 +41,7 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 
 ## Known Issues & Quirks
 - HubSpot Free plan does NOT support native Workflows, Webhooks, or Custom Code Actions — all automation must be agent-orchestrated externally via n8n
-- LinkedIn data provider not yet selected (Proxycurl, Apollo, Lusha shortlisted) — blocks F-02 and F-03
+- LinkedIn data provider: Phantom Buster selected and integrated in F-02
 - Slack workspace/channel targets TBD — interim delivery via email
 - Legal review for meeting transcription (Privacy Act 1988 AU + PDPA SG) running in parallel — note-taking agent cannot go to production until sign-off
 - Document templates (ROI model, business case, pitch deck) handover required by 14 Mar
@@ -49,7 +49,7 @@ DO NOT delete historical context if it is still relevant. Compress older complet
 ## Completed Phases
 - [x] Workspace setup — AGENTS.md, MEMORY.md, agent_docs/ created
 - [x] Phase 0: Foundations (9-14 Mar) — VERIFIED 5 Mar: HubSpot API, MEDDPICC props, n8n running, Calendar connected
-- [ ] Phase 1: Top of Funnel (14-21 Mar)
+- [x] Phase 1: Top of Funnel (14-21 Mar) — VERIFIED 6 Mar: ICP scoring, MEDDPICC scoring, HubSpot auto-create all passing
 - [ ] Phase 2: Middle of Funnel (21-28 Mar)
 - [ ] Phase 3: Bottom of Funnel (28-31 Mar)
 - [ ] Phase 4: Go Live (1 Apr)

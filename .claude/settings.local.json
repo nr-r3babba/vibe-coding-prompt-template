@@ -18,7 +18,14 @@
       "Bash(docker --version)",
       "Bash(powershell.exe -Command \"docker --version\")",
       "Bash(powershell.exe -Command \"docker ps --format ''table {{.Names}}\\\\t{{.Status}}\\\\t{{.Ports}}''\")",
-      "Bash(powershell.exe -Command \"Invoke-WebRequest -Uri http://localhost:5678/healthz -UseBasicParsing -TimeoutSec 5 | Select-Object -ExpandProperty StatusCode\")"
+      "Bash(powershell.exe -Command \"Invoke-WebRequest -Uri http://localhost:5678/healthz -UseBasicParsing -TimeoutSec 5 | Select-Object -ExpandProperty StatusCode\")",
+      "Bash(node scripts/test-phase1-flow.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5678/)",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS: %{http_code}\" -X POST http://localhost:5678/webhook/phantom-buster-webhook -H \"Content-Type: application/json\" -d '{\"\"prospects\"\":[{\"\"fullName\"\":\"\"Test\"\",\"\"title\"\":\"\"CRO\"\",\"\"company\"\":\"\"Test Bank\"\"}]}')",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS: %{http_code}\" -X POST http://localhost:5678/webhook/score-meddpicc -H \"Content-Type: application/json\" -d '{\"\"dealId\"\":\"\"57561810975\"\"}')",
+      "Bash(node scripts/test-phase1-flow.js meddpicc)",
+      "Bash(node scripts/test-phase1-flow.js both)",
+      "Bash(winget install ngrok.ngrok)"
     ]
   }
 }

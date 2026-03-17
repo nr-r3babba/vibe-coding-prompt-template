@@ -72,9 +72,9 @@ These rules apply across all AI coding assistants:
 - [x] Configure Google Calendar integration
 
 ### Phase 1: Top of Funnel (Week 2: 14-21 Mar)
-- [ ] LinkedIn ICP Scraper via Phantom Buster + n8n (F-02)
-- [ ] MEDDPICC Auto-Scoring Agent via Claude API (F-03)
-- [ ] Auto-create scored deals in HubSpot
+- [x] LinkedIn ICP Scraper via Phantom Buster + n8n (F-02)
+- [x] MEDDPICC Auto-Scoring Agent via Claude API (F-03)
+- [x] Auto-create scored deals in HubSpot
 - **Gate:** First 10 prospects scored and added to CRM
 
 ### Phase 2: Middle of Funnel (Week 3: 21-28 Mar)
